@@ -150,10 +150,12 @@ body{
    2 · CHECK-IN — sequential steps
    ============================================================ */
 .c-head{margin-top:30px}
-.c-list{margin-top:24px;display:flex;flex-direction:column}
-.c-step{display:flex;align-items:center;gap:14px;padding:13px 0;position:relative}
-.c-step + .c-step{border-top:1px solid var(--line-2)}
+.c-list{margin-top:24px;display:flex;flex-direction:column;position:relative}
+.c-spine{position:absolute;left:11px;top:25px;bottom:25px;width:2px;background:var(--line-2);border-radius:2px;overflow:hidden}
+.c-spine i{position:absolute;inset:0 0 auto 0;height:0;background:var(--accent);border-radius:2px;transition:height .45s var(--ease)}
+.c-step{display:flex;align-items:center;gap:14px;padding:13px 0;position:relative;z-index:1}
 .c-ind{width:24px;height:24px;flex:none;position:relative}
+.c-ind .bg{fill:var(--surface)}
 .c-ind .ring{fill:none;stroke:var(--line);stroke-width:2}
 .c-ind .arc{fill:none;stroke:var(--accent);stroke-width:2;stroke-linecap:round;
   transform:rotate(-90deg);transform-origin:center;opacity:0}
@@ -330,6 +332,7 @@ const cList = document.getElementById('cList');
 STEPS.forEach(([t,s])=>{
   const el=document.createElement('div'); el.className='c-step';
   el.innerHTML=`<svg class="c-ind" viewBox="0 0 24 24">
+      <circle class="bg"   cx="12" cy="12" r="11"/>
       <circle class="ring" cx="12" cy="12" r="10"/>
       <circle class="arc"  cx="12" cy="12" r="10"/>
       <circle class="disc" cx="12" cy="12" r="11"/>
@@ -338,6 +341,7 @@ STEPS.forEach(([t,s])=>{
     <span class="c-lab"><b class="body-sm-emphasized">${t}</b><span class="body-xs">${s}</span></span>`;
   cList.appendChild(el);
 });
+cList.insertAdjacentHTML('afterbegin','<div class="c-spine"><i id="cSpineFill"></i></div>');
 const cSteps=[...document.querySelectorAll('.c-step')];
 const C_CIRC=2*Math.PI*10;
 cSteps.forEach(st=>{const a=st.querySelector('.arc');a.style.strokeDasharray=C_CIRC;});
@@ -389,6 +393,7 @@ function renderCheckin(p){
     st.classList.toggle('active',sub>0&&sub<1);
     st.querySelector('.arc').style.strokeDashoffset=C_CIRC*(1-sub);
   });
+  document.getElementById('cSpineFill').style.height=clamp(p,0,1)*100+'%';
 }
 function renderConfirm(p){
   fRing.style.strokeDashoffset=F_RC*(1-p);
