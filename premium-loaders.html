@@ -144,6 +144,10 @@ body{
 .s-svg .o{fill:var(--accent)}
 .s-svg .d{fill:var(--surface);stroke:var(--accent-soft);stroke-width:1.5;transition:fill .25s var(--ease),stroke .25s var(--ease)}
 .s-svg.done .d{fill:var(--accent);stroke:var(--accent)}
+/* arrival ring — same soft treatment as the seat lock / seal bloom */
+.s-svg .s-ping{fill:none;stroke:var(--accent);stroke-width:1.5;opacity:0;transform-box:fill-box;transform-origin:center;pointer-events:none}
+.s-svg.done .s-ping{animation:sping .55s var(--ease-out) both}
+@keyframes sping{0%{opacity:.3;transform:scale(.85)}100%{opacity:0;transform:scale(2.2)}}
 .s-svg .node{fill:var(--accent);stroke:var(--surface);stroke-width:2.5}
 
 /* ============================================================
@@ -262,6 +266,7 @@ body{
         <path class="draw"  id="sDraw"  d="M14 84 C 80 18, 184 18, 250 50"/>
         <circle class="o" cx="14" cy="84" r="5"/>
         <circle class="d" id="sDest" cx="250" cy="50" r="5"/>
+        <circle class="s-ping" cx="250" cy="50" r="7" fill="none"/>
         <circle class="node" id="sNode" cx="14" cy="84" r="4.5"/>
       </svg>
       <div class="foot-pct">
