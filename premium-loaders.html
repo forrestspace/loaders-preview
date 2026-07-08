@@ -139,8 +139,10 @@ body{
 .s-route .code{font-size:34px;line-height:1}
 .s-route .arrow{flex:1;height:1px;background:var(--line);position:relative;top:-9px}
 .s-svg{margin-top:30px;width:100%}
-.s-svg .track{fill:none;stroke:var(--line);stroke-width:1.5}
+.s-svg .track{fill:none;stroke:var(--line);stroke-width:1.5;stroke-dasharray:.1 6;stroke-linecap:round}  /* dotted flight-path guide */
 .s-svg .draw{fill:none;stroke:var(--accent);stroke-width:1.5;stroke-linecap:round}
+.s-svg .comet{fill:none;stroke:var(--accent);stroke-width:3;stroke-linecap:round;opacity:.5}  /* soft glow trailing the node */
+.s-svg.done .comet{opacity:0}
 .s-svg .o{fill:var(--accent)}
 .s-svg .d{fill:var(--surface);stroke:var(--accent-soft);stroke-width:1.5;transition:fill .25s var(--ease),stroke .25s var(--ease)}
 .s-svg.done .d{fill:var(--accent);stroke:var(--accent)}
@@ -258,8 +260,10 @@ body{
         <div class="s-route"><span class="code">SEA</span><span class="arrow"></span><span class="code">JFK</span></div>
       </div>
       <svg class="s-svg" id="sSvg" viewBox="0 0 264 110" aria-hidden="true">
+        <defs><filter id="sGlow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.5"/></filter></defs>
         <path class="track" id="sTrack" d="M14 84 C 80 18, 184 18, 250 50"/>
         <path class="draw"  id="sDraw"  d="M14 84 C 80 18, 184 18, 250 50"/>
+        <path class="comet" id="sComet" d="M14 84 C 80 18, 184 18, 250 50" filter="url(#sGlow)"/>
         <circle class="o" cx="14" cy="84" r="5"/>
         <circle class="d" id="sDest" cx="250" cy="50" r="5"/>
         <circle class="node" id="sNode" cx="14" cy="84" r="4.5"/>
@@ -383,6 +387,20 @@ const sDraw=document.getElementById('sDraw'), sTrack=document.getElementById('sT
 const sNode=document.getElementById('sNode'), sSvg=document.getElementById('sSvg');
 const S_LEN=sTrack.getTotalLength();
 sDraw.style.strokeDasharray=S_LEN;
+const sComet=document.getElementById('sComet'), sNote=document.getElementById('sNote');
+const S_TAIL=30;
+sComet.style.strokeDasharray=S_TAIL+' '+S_LEN;
+let sCountTimer=null, sCounted=false;
+function countUp(){
+  clearInterval(sCountTimer);
+  if(RM){ sNote.textContent='47 flights found'; return; }
+  const target=47, dur=850, start=performance.now();
+  sCountTimer=setInterval(()=>{
+    const t=Math.min(1,(performance.now()-start)/dur), n=Math.round((1-Math.pow(1-t,3))*target);
+    sNote.textContent=n+' flights found';
+    if(t>=1){ clearInterval(sCountTimer); sNote.textContent='47 flights found'; }
+  },40);
+}
 
 const fRing=document.getElementById('fRing'), fCheck=document.getElementById('fCheck');
 const F_RC=2*Math.PI*52, F_CL=fCheck.getTotalLength();
@@ -417,12 +435,14 @@ function easeLoft(p){                 // quick eased draw over the first/last 20
 
 /* ---------- render: pure functions of p ---------- */
 function renderSearch(p){
-  const e=easeLoft(clamp(p,0,1));
-  sDraw.style.strokeDashoffset=S_LEN*(1-e);
-  const pt=sTrack.getPointAtLength(S_LEN*e);
+  const e=easeLoft(clamp(p,0,1)), drawLen=S_LEN*e;
+  sDraw.style.strokeDashoffset=S_LEN-drawLen;
+  sComet.style.strokeDashoffset=S_TAIL-drawLen;      // glow trails the node
+  const pt=sTrack.getPointAtLength(drawLen);
   sNode.setAttribute('cx',pt.x); sNode.setAttribute('cy',pt.y);
   const done=p>=0.999; sSvg.classList.toggle('done',done);
-  document.getElementById('sNote').textContent=done?'47 flights found':'Checking 1,200+ fares';
+  if(done && !sCounted){ sCounted=true; countUp(); }               // count 0→47 once
+  else if(!done){ if(sCounted){ sCounted=false; clearInterval(sCountTimer); } sNote.textContent='Checking 1,200+ fares'; }
 }
 function renderCheckin(p){
   cSteps.forEach((st,i)=>{
