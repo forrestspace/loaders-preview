@@ -204,13 +204,19 @@ body{
 .t-head{margin-top:30px}
 .t-grid-wrap{margin:30px auto 0;display:flex;justify-content:center}
 .t-grid{display:grid;grid-template-columns:repeat(3,1fr) 14px repeat(3,1fr);gap:9px}
-.t-seat{width:26px;height:26px;border-radius:7px;background:var(--surface);border:1.5px solid var(--line-2);
+.t-seat{width:26px;height:26px;border-radius:7px;background:var(--surface);border:1.5px solid var(--line-2);position:relative;
   transition:background .22s var(--ease),border-color .22s var(--ease),transform .22s var(--ease)}
 .t-aisle{width:14px}
-.t-seat.settled{background:var(--accent-tint);border-color:var(--accent-tint)}
+/* each cell springs in as the cabin sweep reaches it */
+.t-seat.settled{background:var(--accent-tint);border-color:var(--accent-tint);animation:seatpop .34s var(--ease) both}
+@keyframes seatpop{0%{transform:scale(.5)}62%{transform:scale(1.08)}100%{transform:scale(1)}}
 .t-seat.chosen{border-color:var(--accent-soft);border-style:dashed}
+.t-seat.chosen::after{content:"";position:absolute;inset:-2px;border-radius:9px;border:2px solid var(--accent);opacity:0;pointer-events:none}
 .t-seat.locked{background:var(--accent);border-color:var(--accent);border-style:solid;
   box-shadow:0 6px 14px -6px color-mix(in srgb,var(--accent) 60%,transparent)}
+/* lock ceremony: a ring pings out from the chosen seat */
+.t-seat.locked::after{animation:seatping .6s var(--ease-out) both}
+@keyframes seatping{0%{opacity:.5;transform:scale(1)}100%{opacity:0;transform:scale(2.5)}}
 .t-reveal{margin-top:26px;text-align:center;opacity:0;transform:translateY(6px);transition:.32s var(--ease-out)}
 .t-screen.done .t-reveal{opacity:1;transform:none}
 .t-reveal span{display:block;color:var(--ink-2);margin-top:3px;letter-spacing:.02em}  /* b → .body-default-emphasized; span → .body-xs */
@@ -366,6 +372,11 @@ for(let i=0;i<SEAT_N;i++){
   if(c===3){const a=document.createElement('div');a.className='t-aisle';tGrid.appendChild(a);}
   tGrid.appendChild(s); seats.push(s);
 }
+// settle order: front → back with a slight diagonal lean (a cabin sweep, not raster)
+const orderPos=new Array(SEAT_N);
+[...Array(SEAT_N).keys()]
+  .sort((a,b)=>((a/SEAT_COLS|0)+ (a%SEAT_COLS)*0.14) - ((b/SEAT_COLS|0)+ (b%SEAT_COLS)*0.14))
+  .forEach((seatIdx,k)=>orderPos[seatIdx]=k);
 
 /* ---------- progress-bound geometry ---------- */
 const sDraw=document.getElementById('sDraw'), sTrack=document.getElementById('sTrack');
@@ -434,11 +445,9 @@ function renderConfirm(p){
   else if(!done && fLocked){ fLocked=false; clearInterval(fCodeTimer); fCode.textContent=F_CODE; }
 }
 function renderSeat(p){
-  const settled=Math.floor(p*SEAT_N+1e-9);
-  seats.forEach((s,i)=>{
-    s.classList.toggle('settled',i<settled);
-    if(i===CHOSEN) s.classList.toggle('locked',settled>CHOSEN);
-  });
+  const count=Math.floor(clamp(p,0,1)*SEAT_N+1e-9);
+  seats.forEach((s,i)=>s.classList.toggle('settled',orderPos[i]<count));
+  seats[CHOSEN].classList.toggle('locked',orderPos[CHOSEN]<count);
   const done=p>=0.999;
   document.getElementById('tScreen').classList.toggle('done',done);
   document.getElementById('tNote').textContent=done?'Seat saved':'Holding seat map';
