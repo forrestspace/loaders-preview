@@ -1,0 +1,32 @@
+/* Auro heading type classes — reproduced from WebCoreStyleSheets:
+   src/type/mixins/_fluid-type.scss  +  config/alaska/type/heading.scss
+   font-size uses the DS fluid clamp: clamp(min, preferred*1.3333vw, max),
+   where the preferred value hits its exact px at the 1200px design viewport.
+   family / weight / line-height / letter-spacing reference the per-brand
+   Auro tokens (from auro--alaska.css / auro--hawaiian.css), so these classes
+   are brand-correct automatically (e.g. heading weight 300 AK / 400 HA). */
+.heading-lg,
+.heading-sm,
+.heading-2xs{
+  font-family: var(--ds-basic-type-family-heading), var(--ds-basic-type-family-heading-fallback);
+  font-weight: var(--ds-basic-type-weight-heading);
+  line-height: var(--ds-basic-type-line-height-heading);
+  letter-spacing: var(--ds-basic-type-letter-spacing-heading);
+}
+.heading-lg{ font-size: clamp(1.75rem, 2.6667vw, 2.25rem); }   /* 28 / 32 / 36 px */
+.heading-sm{ font-size: clamp(1.375rem, 2vw, 1.5rem); }        /* 22 / 24 / 24 px */
+.heading-2xs{ font-size: 1.125rem; }                           /* 18 px (fixed) */
+
+/* Body type — fixed sizes, per config/alaska/type/body.scss.
+   Regular uses the per-brand body weight; -emphasized uses DS medium (500). */
+.body-default,.body-default-emphasized,
+.body-sm,.body-sm-emphasized,
+.body-xs,.body-xs-emphasized{
+  font-family: var(--ds-basic-type-family-body), var(--ds-basic-type-family-body-fallback);
+  letter-spacing: var(--ds-basic-type-letter-spacing-body);
+}
+.body-default,.body-sm,.body-xs{ font-weight: var(--ds-basic-type-weight-body); }
+.body-default-emphasized,.body-sm-emphasized,.body-xs-emphasized{ font-weight: 500; }
+.body-default,.body-default-emphasized{ font-size: 1rem;    line-height: var(--ds-basic-type-line-height-body2); }  /* 16px */
+.body-sm,.body-sm-emphasized{          font-size: .875rem; line-height: var(--ds-basic-type-line-height-body3); }  /* 14px */
+.body-xs,.body-xs-emphasized{          font-size: .75rem;  line-height: var(--ds-basic-type-line-height-body4); }  /* 12px */

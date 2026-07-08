@@ -1,0 +1,23 @@
+Auro design tokens — vendored (color + type), pinned.
+
+Source:  https://github.com/AlaskaAirlines/AuroDesignTokens  @ 91034caf3ee1347ca319a59af58bceabf416500d
+         dist/themes/{alaska,hawaiian}/CSSCustomProperties--{alaska,hawaiian}.css
+Type ref: https://github.com/AlaskaAirlines/WebCoreStyleSheets @ 387d9ecf5b6ccbb89063852caad6c1c46b0ccb0b
+         (font families resolve from the token files above; sizes stay local)
+
+Only modification: the leading ":root {" selector was rescoped to
+":root[data-brand=\"alaska\"] {" / ":root[data-brand=\"hawaiian\"] {" so both
+brand token sets can coexist behind the demo's brand toggle. A real single-brand
+app would load one file unmodified on :root.
+Tokens used by two-step-loader.html:
+  --ds-basic-color-surface-inverse   (field background)
+  --ds-basic-color-texticon-inverse  (text on field)
+  --ds-basic-type-family-body / -fallback (font family)
+
+auro-type.css — reproduced (not copied) from WebCoreStyleSheets:
+  src/type/mixins/_fluid-type.scss + config/alaska/type/heading.scss
+  .heading-lg = clamp(1.75rem, 2.6667vw, 2.25rem)  (28/32/36px)
+  .heading-sm = clamp(1.375rem, 2vw, 1.5rem)        (22/24/24px)
+  clamp preferred*vw derived from the DS 1200px design viewport (16/12 = 1.3333 rem/vw).
+  family/weight/line-height/letter-spacing reference the per-brand tokens above
+  (heading weight resolves to 300 on Alaska, 400 on Hawaiian).

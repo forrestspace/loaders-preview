@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Premium loaders — Alaska / Hawaiian</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+/* Auro colour tokens (vendored + pinned), scoped by data-brand */
+@import url("./tokens/auro--alaska.css");
+@import url("./tokens/auro--hawaiian.css");
+@import url("./tokens/auro-type.css");   /* body-* / heading-* classes */
+/* ============================================================
+   PROGRESS-DRIVEN LOADER SYSTEM
+   ------------------------------------------------------------
+   The single source of truth for every screen is a number p in
+   [0,1] that stands in for a REAL progress signal (fetch/XHR
+   progress events, a server-sent milestone stream, etc.).
+   Nothing animates on its own clock: every drawn line, checked
+   step, revealed field and grid cell is a pure function of p.
+   The rAF loop below only ADVANCES p (simulating the network);
+   render*() functions never invent motion of their own.
+   ============================================================ */
+
+:root{
+  /* colours sourced from Auro tokens (surface-inverse resolves per data-brand);
+     brand tints derived from surface-inverse; fonts kept local */
+  --accent:var(--ds-basic-color-surface-inverse,#00274a);
+  --accent-tint:color-mix(in srgb,var(--ds-basic-color-surface-inverse,#00274a) 10%,var(--ds-basic-color-surface-default,#fff));
+  --accent-soft:color-mix(in srgb,var(--ds-basic-color-surface-inverse,#00274a) 35%,var(--ds-basic-color-surface-default,#fff));
+  --on-accent:var(--ds-basic-color-texticon-inverse,#fff);
+
+  --ink:var(--ds-basic-color-texticon-default,#2a2a2a);
+  --ink-2:var(--ds-basic-color-texticon-muted,#676767);
+  --ink-3:var(--ds-basic-color-texticon-muted,#676767);
+  --line:var(--ds-basic-color-border-subtle,#ddd);
+  --line-2:var(--ds-basic-color-border-subtle,#ddd);
+  --surface:var(--ds-basic-color-surface-default,#fff);
+  --bg:var(--ds-basic-color-page-background-default,#fff);
+
+  --ease:cubic-bezier(.22,1,.36,1);
+  --ease-out:cubic-bezier(.16,1,.3,1);
+  --font:"DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --font-display:"Space Grotesk",system-ui,sans-serif;  /* numerics & station codes carry the identity */
+}
+
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  font-family:var(--font);
+  background:var(--bg);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+.tnum{font-family:var(--font-display);font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+
+/* ---------- page chrome ---------- */
+.top{
+  position:sticky;top:0;z-index:10;
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  padding:14px 24px;
+  background:#fff;border-bottom:1px solid #e2e5ea;
+  box-shadow:0 6px 20px -12px rgba(11,22,32,.22);
+}
+.brandmark{display:flex;flex-direction:column;line-height:1.1}
+.brandmark b{font-size:14px;font-weight:650;letter-spacing:-.01em}
+.brandmark span{font-size:11px;color:var(--ink-2);letter-spacing:.02em}
+
+.controls{display:flex;align-items:center;gap:14px;margin-left:auto;flex-wrap:wrap}
+.seg{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:3px}
+.seg button{
+  font:inherit;font-size:12px;font-weight:550;letter-spacing:.01em;
+  border:0;background:transparent;color:var(--ink-2);
+  padding:6px 12px;border-radius:6px;cursor:pointer;transition:.18s var(--ease);
+}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+
+.scrub{display:flex;align-items:center;gap:10px}
+.scrub label{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.scrub input[type=range]{width:180px;accent-color:var(--accent)}
+.btn{
+  font:inherit;font-size:12px;font-weight:550;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink);
+  padding:7px 14px;border-radius:8px;cursor:pointer;transition:.18s var(--ease);
+}
+.btn:hover{border-color:var(--accent-soft)}
+.btn:focus-visible,.seg button:focus-visible,input:focus-visible{
+  outline:2px solid var(--accent);outline-offset:2px;
+}
+
+/* ---------- grid of phones ---------- */
+.stage{
+  display:grid;gap:34px 28px;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  max-width:1420px;margin:0 auto;padding:36px 28px 80px;
+}
+@media(max-width:1180px){.stage{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:620px){.stage{grid-template-columns:1fr;justify-items:center}}
+
+.cell{display:flex;flex-direction:column;gap:14px;min-width:0}
+.cap{display:flex;flex-direction:column;gap:3px;padding:0 4px}
+.cap .k{letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}  /* size/weight → .body-xs-emphasized */
+.cap .d{color:var(--ink-2);line-height:1.45}                                /* size → .body-xs */
+
+/* ---------- phone frame ---------- */
+.phone{
+  width:100%;max-width:312px;aspect-ratio:312/620;align-self:center;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:40px;
+  box-shadow:0 1px 2px rgba(11,22,32,.04),0 24px 48px -28px rgba(11,22,32,.28);
+  overflow:hidden;display:flex;flex-direction:column;
+}
+.screen{flex:1;display:flex;flex-direction:column;padding:0 24px 26px;min-height:0}
+
+/* status bar */
+.sb{display:flex;align-items:center;justify-content:space-between;padding:16px 2px 0;color:var(--ink)}
+.sb .sig{display:flex;gap:3px}
+.sb .sig i{width:4px;height:4px;border-radius:50%;background:var(--ink);display:block}
+
+.ey{letter-spacing:.16em;text-transform:uppercase;color:var(--ink-2)}  /* size/weight → .body-xs-emphasized */
+.foot-pct{margin-top:auto;display:flex;align-items:baseline;justify-content:space-between}
+.foot-pct .note{color:var(--ink-2)}                                    /* size → .body-xs */
+
+/* reduced-motion: kill all decorative transitions, keep end-state */
+@media (prefers-reduced-motion: reduce){
+  *{transition:none!important;animation:none!important}
+}
+
+/* ============================================================
+   1 · SEARCH — route draw
+   ============================================================ */
+.s-head{margin-top:30px}
+.s-route{
+  display:flex;align-items:baseline;gap:14px;margin-top:14px;
+  font-family:var(--font-display);font-weight:600;letter-spacing:-.02em;
+}
+.s-route .code{font-size:34px;line-height:1}
+.s-route .arrow{flex:1;height:1px;background:var(--line);position:relative;top:-9px}
+.s-svg{margin-top:30px;width:100%}
+.s-svg .track{fill:none;stroke:var(--line);stroke-width:1.5}
+.s-svg .draw{fill:none;stroke:var(--accent);stroke-width:1.5;stroke-linecap:round}
+.s-svg .o{fill:var(--accent)}
+.s-svg .d{fill:var(--surface);stroke:var(--accent-soft);stroke-width:1.5;transition:fill .25s var(--ease),stroke .25s var(--ease)}
+.s-svg.done .d{fill:var(--accent);stroke:var(--accent)}
+.s-svg .node{fill:var(--accent);stroke:var(--surface);stroke-width:2.5}
+
+/* ============================================================
+   2 · CHECK-IN — sequential steps
+   ============================================================ */
+.c-head{margin-top:30px}
+.c-list{margin-top:24px;display:flex;flex-direction:column}
+.c-step{display:flex;align-items:center;gap:14px;padding:13px 0;position:relative}
+.c-step + .c-step{border-top:1px solid var(--line-2)}
+.c-ind{width:24px;height:24px;flex:none;position:relative}
+.c-ind .ring{fill:none;stroke:var(--line);stroke-width:2}
+.c-ind .arc{fill:none;stroke:var(--accent);stroke-width:2;stroke-linecap:round;
+  transform:rotate(-90deg);transform-origin:center;opacity:0}
+.c-ind .disc{fill:var(--accent);opacity:0;transform:scale(.4);transform-origin:center;transition:.26s var(--ease)}
+.c-ind .tick{fill:none;stroke:var(--on-accent);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;opacity:0}
+.c-step.active .arc{opacity:1}
+.c-step.done .disc{opacity:1;transform:scale(1)}
+.c-step.done .tick{opacity:1}
+.c-step.done .ring{opacity:0}
+.c-lab{display:flex;flex-direction:column;gap:2px;min-width:0}
+.c-lab b{color:var(--ink-3);transition:color .25s var(--ease)}                          /* size/weight → .body-sm-emphasized */
+.c-lab span{color:var(--ink-3);opacity:0;height:0;transition:opacity .25s var(--ease)}  /* size → .body-xs */
+.c-step.active .c-lab b,.c-step.done .c-lab b{color:var(--ink)}
+.c-step.active .c-lab span,.c-step.done .c-lab span{opacity:1;height:auto}
+
+/* ============================================================
+   3 · CONFIRMATION — drawn seal
+   ============================================================ */
+.f-screen{align-items:center;text-align:center}
+.f-seal{margin:auto 0;display:flex;flex-direction:column;align-items:center;gap:26px}
+.f-svg .track{fill:none;stroke:var(--line);stroke-width:2}
+.f-svg .ringdraw{fill:none;stroke:var(--accent);stroke-width:2;stroke-linecap:round;
+  transform:rotate(-90deg);transform-origin:center}
+.f-svg .check{fill:none;stroke:var(--accent);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;
+  transition:stroke-dashoffset .55s var(--ease) .14s}
+.f-txt b{letter-spacing:-.01em;display:block}   /* family/size/weight → .heading-2xs */
+.f-txt .sub{color:var(--ink-2);margin-top:6px}  /* size → .body-sm */
+.f-reveal{margin:auto 0 6px;width:100%;
+  opacity:0;transform:translateY(8px);transition:.4s var(--ease-out);pointer-events:none}
+.f-screen.done .f-reveal{opacity:1;transform:none}
+.f-row{display:flex;justify-content:space-between;padding:11px 0;border-top:1px solid var(--line-2)}  /* size → .body-sm */
+.f-row span:first-child{color:var(--ink-2)}
+.f-row span:last-child{font-weight:560}
+
+/* ============================================================
+   4 · SEAT — grid settle
+   ============================================================ */
+.t-head{margin-top:30px}
+.t-grid-wrap{margin:30px auto 0;display:flex;justify-content:center}
+.t-grid{display:grid;grid-template-columns:repeat(3,1fr) 14px repeat(3,1fr);gap:9px}
+.t-seat{width:26px;height:26px;border-radius:7px;background:var(--surface);border:1.5px solid var(--line-2);
+  transition:background .22s var(--ease),border-color .22s var(--ease),transform .22s var(--ease)}
+.t-aisle{width:14px}
+.t-seat.settled{background:var(--accent-tint);border-color:var(--accent-tint)}
+.t-seat.chosen{border-color:var(--accent-soft);border-style:dashed}
+.t-seat.locked{background:var(--accent);border-color:var(--accent);border-style:solid;
+  box-shadow:0 6px 14px -6px color-mix(in srgb,var(--accent) 60%,transparent)}
+.t-reveal{margin-top:26px;text-align:center;opacity:0;transform:translateY(6px);transition:.32s var(--ease-out)}
+.t-screen.done .t-reveal{opacity:1;transform:none}
+.t-reveal span{display:block;color:var(--ink-2);margin-top:3px;letter-spacing:.02em}  /* b → .body-default-emphasized; span → .body-xs */
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brandmark">
+    <b>Loading system</b>
+    <span>Premium product loaders — progress-driven</span>
+  </div>
+  <div class="controls">
+    <div class="seg" role="group" aria-label="Brand">
+      <button id="bAla" aria-pressed="true">Alaska</button>
+      <button id="bHaw" aria-pressed="false">Hawaiian</button>
+    </div>
+    <div class="scrub">
+      <label for="master">Scrub all</label>
+      <input id="master" type="range" min="0" max="100" value="0" aria-label="Master progress" />
+    </div>
+    <button class="btn" id="play">▶ Auto</button>
+  </div>
+</header>
+
+<main class="stage">
+
+  <!-- 1 · SEARCH -->
+  <section class="cell">
+    <div class="cap">
+      <span class="k body-xs-emphasized">01 · Search</span>
+      <span class="t body-sm-emphasized">Route draw</span>
+      <span class="d body-xs">The hairline route IS the progress bar, shaped like the trip.</span>
+    </div>
+    <div class="phone"><div class="screen" id="sScreen" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Searching flights SEA to JFK">
+      <div class="sb"><span class="time tnum body-xs-emphasized">9:41</span><span class="sig"><i></i><i></i><i></i><i></i></span></div>
+      <div class="s-head">
+        <div class="ey body-xs-emphasized">Searching fares</div>
+        <div class="s-route"><span class="code">SEA</span><span class="arrow"></span><span class="code">JFK</span></div>
+      </div>
+      <svg class="s-svg" id="sSvg" viewBox="0 0 264 110" aria-hidden="true">
+        <path class="track" id="sTrack" d="M14 84 C 80 18, 184 18, 250 50"/>
+        <path class="draw"  id="sDraw"  d="M14 84 C 80 18, 184 18, 250 50"/>
+        <circle class="o" cx="14" cy="84" r="5"/>
+        <circle class="d" id="sDest" cx="250" cy="50" r="5"/>
+        <circle class="node" id="sNode" cx="14" cy="84" r="4.5"/>
+      </svg>
+      <div class="foot-pct">
+        <span class="note body-xs" id="sNote">Checking 1,200+ fares</span>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- 2 · SEAT -->
+  <section class="cell">
+    <div class="cap">
+      <span class="k body-xs-emphasized">02 · Seat</span>
+      <span class="t body-sm-emphasized">Grid settle</span>
+      <span class="d body-xs">Cells settle in reading order to the cabin fraction; your seat locks as the front passes it.</span>
+    </div>
+    <div class="phone"><div class="screen t-screen" id="tScreen" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Saving your seat 14C">
+      <div class="sb"><span class="time tnum body-xs-emphasized">9:41</span><span class="sig"><i></i><i></i><i></i><i></i></span></div>
+      <div class="t-head"><div class="ey body-xs-emphasized">Saving your seat</div></div>
+      <div class="t-grid-wrap"><div class="t-grid" id="tGrid"></div></div>
+      <div class="t-reveal"><b class="tnum body-default-emphasized">Seat 14C</b><span class="body-xs">SEA → JFK · Main Cabin</span></div>
+      <div class="foot-pct" style="margin-top:auto">
+        <span class="note body-xs" id="tNote">Holding seat map</span>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- 3 · CONFIRMATION -->
+  <section class="cell">
+    <div class="cap">
+      <span class="k body-xs-emphasized">03 · Confirmation</span>
+      <span class="t body-sm-emphasized">Drawn seal</span>
+      <span class="d body-xs">One ceremonial mark that completes exactly at 100%, then resolves details.</span>
+    </div>
+    <div class="phone"><div class="screen f-screen" id="fScreen" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Confirming your booking">
+      <div class="sb" style="width:100%"><span class="time tnum body-xs-emphasized">9:41</span><span class="sig"><i></i><i></i><i></i><i></i></span></div>
+      <div class="f-seal">
+        <svg class="f-svg" width="118" height="118" viewBox="0 0 118 118" aria-hidden="true">
+          <circle class="track" cx="59" cy="59" r="52"/>
+          <circle class="ringdraw" id="fRing" cx="59" cy="59" r="52"/>
+          <path class="check" id="fCheck" d="M38 60 L53 75 L82 44"/>
+        </svg>
+        <div class="f-txt"><b id="fTitle" class="heading-2xs">Confirming your booking</b><span class="sub body-sm" id="fSub">Securing fare &amp; seat</span></div>
+      </div>
+      <div class="f-reveal">
+        <div class="f-row body-sm"><span>Route</span><span>SEA → JFK</span></div>
+        <div class="f-row body-sm"><span>Date</span><span>Aug 14, 2026</span></div>
+        <div class="f-row body-sm"><span>Confirmation</span><span class="tnum">HKZ8ZQ</span></div>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- 4 · CHECK-IN -->
+  <section class="cell">
+    <div class="cap">
+      <span class="k body-xs-emphasized">04 · Check-in</span>
+      <span class="t body-sm-emphasized">Milestone steps</span>
+      <span class="d body-xs">Each step is gated on a real milestone; the active ring shows sub-progress.</span>
+    </div>
+    <div class="phone"><div class="screen" id="cScreen" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Checking you in">
+      <div class="sb"><span class="time tnum body-xs-emphasized">9:41</span><span class="sig"><i></i><i></i><i></i><i></i></span></div>
+      <div class="c-head"><div class="ey body-xs-emphasized">Checking you in</div></div>
+      <div class="c-list" id="cList"></div>
+      <div class="foot-pct">
+        <span class="note body-xs">SEA → JFK · Flight 24</span>
+      </div>
+    </div></div>
+  </section>
+
+</main>
+
+<script>
+const RM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- build dynamic DOM ---------- */
+const STEPS = [
+  ['Verifying identity','Confirmed'],
+  ['Confirming seat 14C','Locked'],
+  ['Issuing bag tags','2 tags ready'],
+  ['Preparing boarding pass','Group C']
+];
+const cList = document.getElementById('cList');
+STEPS.forEach(([t,s])=>{
+  const el=document.createElement('div'); el.className='c-step';
+  el.innerHTML=`<svg class="c-ind" viewBox="0 0 24 24">
+      <circle class="ring" cx="12" cy="12" r="10"/>
+      <circle class="arc"  cx="12" cy="12" r="10"/>
+      <circle class="disc" cx="12" cy="12" r="11"/>
+      <path class="tick" d="M7.5 12.3 L10.6 15.4 L16.5 9"/>
+    </svg>
+    <span class="c-lab"><b class="body-sm-emphasized">${t}</b><span class="body-xs">${s}</span></span>`;
+  cList.appendChild(el);
+});
+const cSteps=[...document.querySelectorAll('.c-step')];
+const C_CIRC=2*Math.PI*10;
+cSteps.forEach(st=>{const a=st.querySelector('.arc');a.style.strokeDasharray=C_CIRC;});
+
+const SEAT_ROWS=5, SEAT_COLS=6, SEAT_N=SEAT_ROWS*SEAT_COLS;
+const CHOSEN=2*SEAT_COLS+2; // row index 2 (14), col index 2 (C)
+const tGrid=document.getElementById('tGrid'); const seats=[];
+for(let i=0;i<SEAT_N;i++){
+  const c=i%SEAT_COLS;
+  const s=document.createElement('div'); s.className='t-seat'+(i===CHOSEN?' chosen':'');
+  if(c===3){const a=document.createElement('div');a.className='t-aisle';tGrid.appendChild(a);}
+  tGrid.appendChild(s); seats.push(s);
+}
+
+/* ---------- progress-bound geometry ---------- */
+const sDraw=document.getElementById('sDraw'), sTrack=document.getElementById('sTrack');
+const sNode=document.getElementById('sNode'), sSvg=document.getElementById('sSvg');
+const S_LEN=sTrack.getTotalLength();
+sDraw.style.strokeDasharray=S_LEN;
+
+const fRing=document.getElementById('fRing'), fCheck=document.getElementById('fCheck');
+const F_RC=2*Math.PI*52, F_CL=fCheck.getTotalLength();
+fRing.style.strokeDasharray=F_RC; fCheck.style.strokeDasharray=F_CL;
+fCheck.style.strokeDashoffset=F_CL;   // check starts hidden; drawn on completion
+
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function easeLoft(p){                 // quick eased draw over the first/last 20% of the arc, slow loft across the middle 60%
+  const a=0.20, t=0.10;              // a: arc split (20%); t: time given to each fast end
+  const vM=(1-2*a)/(1-2*t);          // loft (slow) speed across the middle 70%
+  const f=u=>a*(3*u*u-2*u*u*u)+t*vM*(u*u*u-u*u);   // ease 0→a, velocity 0→vM
+  if(p<t)    return f(p/t);          // first 15%: eased-in, quick
+  if(p<=1-t) return a+vM*(p-t);      // middle 70%: slow loft
+  return 1-f((1-p)/t);               // last 15%: quick, eased-out (mirror)
+}
+
+/* ---------- render: pure functions of p ---------- */
+function renderSearch(p){
+  const e=easeLoft(clamp(p,0,1));
+  sDraw.style.strokeDashoffset=S_LEN*(1-e);
+  const pt=sTrack.getPointAtLength(S_LEN*e);
+  sNode.setAttribute('cx',pt.x); sNode.setAttribute('cy',pt.y);
+  const done=p>=0.999; sSvg.classList.toggle('done',done);
+  document.getElementById('sNote').textContent=done?'47 flights found':'Checking 1,200+ fares';
+}
+function renderCheckin(p){
+  cSteps.forEach((st,i)=>{
+    const start=i*0.25, sub=clamp((p-start)/0.25,0,1);
+    st.classList.toggle('done',sub>=1);
+    st.classList.toggle('active',sub>0&&sub<1);
+    st.querySelector('.arc').style.strokeDashoffset=C_CIRC*(1-sub);
+  });
+}
+function renderConfirm(p){
+  fRing.style.strokeDashoffset=F_RC*(1-p);
+  const done=p>=0.999;
+  // the check strokes in only after the ring has closed (see .check CSS transition)
+  fCheck.style.strokeDashoffset=done?0:F_CL;
+  document.getElementById('fScreen').classList.toggle('done',done);
+  document.getElementById('fTitle').textContent=done?'Booking confirmed':'Confirming your booking';
+  document.getElementById('fSub').textContent=done?'You’re all set':'Securing fare & seat';
+}
+function renderSeat(p){
+  const settled=Math.floor(p*SEAT_N+1e-9);
+  seats.forEach((s,i)=>{
+    s.classList.toggle('settled',i<settled);
+    if(i===CHOSEN) s.classList.toggle('locked',settled>CHOSEN);
+  });
+  const done=p>=0.999;
+  document.getElementById('tScreen').classList.toggle('done',done);
+  document.getElementById('tNote').textContent=done?'Seat saved':'Holding seat map';
+}
+function renderAll(s){
+  renderSearch(s[0]);renderCheckin(s[1]);renderConfirm(s[2]);renderSeat(s[3]);
+  ['sScreen','cScreen','fScreen','tScreen'].forEach((id,i)=>
+    document.getElementById(id).setAttribute('aria-valuenow',Math.round(s[i]*100)));
+}
+
+/* ---------- driver: advances p only (simulated network) ---------- */
+// per-card pacing: total seconds + a couple of realistic stalls
+const cards=[
+  {p:0,dur:4.6,holds:[]},   // search: smooth, no hard stalls — motion shaped by easeLoft
+  {p:0,dur:5.0,holds:[[.50,.7]]},
+  {p:0,dur:3.4,holds:[[.70,.4]]},
+  {p:0,dur:3.0,holds:[[.40,.4]]},
+];
+let mode='auto', last=performance.now(), holdT=[0,0,0,0], doneT=[0,0,0,0];
+
+function tick(now){
+  const dt=(now-last)/1000; last=now;
+  if(mode==='auto'){
+    cards.forEach((c,i)=>{
+      if(c.p>=1){ doneT[i]+=dt; if(doneT[i]>1.6){c.p=0;doneT[i]=0;holdT[i]=0;} return; }
+      const stall=c.holds.find(([at,len])=>c.p>=at && holdT[i]<len);
+      if(stall){ holdT[i]+=dt; }
+      else { c.p=clamp(c.p+dt/c.dur,0,1); }
+    });
+    renderAll(cards.map(c=>c.p));
+    syncMaster();
+  }
+  requestAnimationFrame(tick);
+}
+function syncMaster(){document.getElementById('master').value=Math.round(cards[0].p*100);}
+
+/* ---------- controls ---------- */
+const playBtn=document.getElementById('play'), master=document.getElementById('master');
+function setMode(m){
+  mode=m;
+  playBtn.textContent = m==='auto' ? '▶ Auto' : '⏸ Manual';
+  if(m==='auto'){last=performance.now();}
+}
+playBtn.addEventListener('click',()=>setMode(mode==='auto'?'manual':'auto'));
+master.addEventListener('input',()=>{
+  setMode('manual');
+  const v=master.value/100; cards.forEach(c=>c.p=v); renderAll([v,v,v,v]);
+});
+
+function setBrand(b){
+  document.documentElement.setAttribute('data-brand',b);
+  document.getElementById('bAla').setAttribute('aria-pressed',b==='alaska');
+  document.getElementById('bHaw').setAttribute('aria-pressed',b==='hawaiian');
+}
+document.getElementById('bAla').addEventListener('click',()=>setBrand('alaska'));
+document.getElementById('bHaw').addEventListener('click',()=>setBrand('hawaiian'));
+setBrand('alaska');
+
+/* ---------- reduced motion: static end-state, no loop ---------- */
+if(RM){
+  setMode('manual'); playBtn.disabled=true;
+  const frames=[1,1,1,1];          // resolved frames
+  cards.forEach((c,i)=>c.p=frames[i]);
+  renderAll(frames); master.value=100;
+}else{
+  requestAnimationFrame(tick);
+}
+</script>
+</body>
+</html>

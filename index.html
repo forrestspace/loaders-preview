@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Alaska / Hawaiian — Loader prototypes</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+:root{
+  --ink:#0b1620; --ink-2:#5b6976; --ink-3:#8793a0;
+  --line:#e5e8ec; --surface:#ffffff; --bg:#f4f5f7;
+  --alaska:#00274a; --hawaiian:#463c8f;
+  --ease:cubic-bezier(.22,1,.36,1);
+  --font:"DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+
+.wrap{max-width:1080px;margin:0 auto;padding:56px 24px 80px}
+header .ey{font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3)}
+header h1{font-size:clamp(28px,4vw,40px);font-weight:700;letter-spacing:-.02em;margin:10px 0 12px}
+header p{font-size:16px;color:var(--ink-2);max-width:620px;line-height:1.55;margin:0}
+
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:22px;margin-top:40px}
+@media(max-width:720px){.grid{grid-template-columns:1fr}}
+
+.card{
+  display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);
+  border-radius:16px;overflow:hidden;text-decoration:none;color:inherit;
+  box-shadow:0 1px 2px rgba(11,22,32,.04);
+  transition:transform .2s var(--ease),box-shadow .2s var(--ease),border-color .2s var(--ease);
+}
+.card:hover{transform:translateY(-3px);box-shadow:0 22px 44px -26px rgba(11,22,32,.4);border-color:#d6dbe1}
+.card:focus-visible{outline:2px solid var(--alaska);outline-offset:2px}
+
+/* live, scaled-down preview: iframe sized 1/scale then scaled to fill the thumb */
+.thumb{position:relative;aspect-ratio:16/10;overflow:hidden;background:#0e1420;border-bottom:1px solid var(--line)}
+.thumb iframe{position:absolute;top:0;left:0;width:250%;height:250%;border:0;
+  transform:scale(.4);transform-origin:top left;pointer-events:none}
+.thumb .veil{position:absolute;inset:0;background:transparent} /* swallow clicks */
+
+.body{padding:18px 20px 20px}
+.body h2{font-size:17px;font-weight:650;letter-spacing:-.01em;margin:0 0 6px}
+.body p{font-size:13.5px;line-height:1.5;color:var(--ink-2);margin:0 0 14px}
+.meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tag{font-size:11px;font-weight:600;letter-spacing:.02em;color:var(--ink-2);
+  background:#f1f3f6;border:1px solid var(--line);border-radius:999px;padding:3px 9px}
+.tag.ala{color:#fff;background:var(--alaska);border-color:transparent}
+.tag.haw{color:#fff;background:var(--hawaiian);border-color:transparent}
+.open{margin-left:auto;font-size:13px;font-weight:650;color:var(--alaska)}
+.card:hover .open{text-decoration:underline}
+
+footer{margin-top:48px;padding-top:22px;border-top:1px solid var(--line);
+  font-size:12.5px;color:var(--ink-3);line-height:1.6}
+footer code{background:#eceef1;padding:1px 6px;border-radius:5px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="ey">Prototypes</div>
+    <h1>Alaska / Hawaiian loaders</h1>
+    <p>A set of progress-driven and brand-moment loading experiences, each brandable for both Alaska and Hawaiian. Open any prototype to interact with it — most include a brand toggle and demo controls.</p>
+  </header>
+
+  <div class="grid">
+
+    <a class="card" href="two-step-loader.html">
+      <div class="thumb"><iframe src="two-step-loader.html" title="Two-step loader" loading="lazy" scrolling="no"></iframe><span class="veil"></span></div>
+      <div class="body">
+        <h2>Two-step loader</h2>
+        <p>Full-bleed status screen — an animated spinner and bouncing ellipsis that resolves to a completion state, with live-updatable status text. Driven by Auro design tokens.</p>
+        <div class="meta"><span class="tag ala">Alaska</span><span class="tag haw">Hawaiian</span><span class="tag">Auro tokens</span><span class="open">Open →</span></div>
+      </div>
+    </a>
+
+    <a class="card" href="premium-loaders.html">
+      <div class="thumb"><iframe src="premium-loaders.html" title="Premium loaders" loading="lazy" scrolling="no"></iframe><span class="veil"></span></div>
+      <div class="body">
+        <h2>Premium loaders</h2>
+        <p>Four in-context loaders where the artwork <em>is</em> the progress bar: route-draw search, settling seat grid, a drawn confirmation seal, and milestone check-in steps.</p>
+        <div class="meta"><span class="tag ala">Alaska</span><span class="tag haw">Hawaiian</span><span class="tag">Progress-driven</span><span class="open">Open →</span></div>
+      </div>
+    </a>
+
+  </div>
+
+  <footer>
+    Static prototypes — self-contained HTML. Auro design tokens are vendored under <code>tokens/</code>.
+    Fonts load from Google Fonts.
+  </footer>
+</div>
+</body>
+</html>
