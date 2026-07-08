@@ -176,6 +176,14 @@ body{
    ============================================================ */
 .f-screen{align-items:center;text-align:center}
 .f-seal{margin:auto 0;display:flex;flex-direction:column;align-items:center;gap:26px}
+.f-mark{position:relative;display:grid;place-items:center}
+/* stamp-press: the seal presses in and settles once the ring closes */
+.f-screen.done .f-svg{animation:stamp .5s var(--ease) both}
+@keyframes stamp{0%{transform:scale(1)}42%{transform:scale(.93)}100%{transform:scale(1)}}
+/* shadow bloom / impact wave radiating from the seal */
+.f-ping{position:absolute;width:104px;height:104px;border-radius:50%;border:2px solid var(--accent);opacity:0;pointer-events:none}
+.f-screen.done .f-ping{animation:ping .62s var(--ease-out) .04s both}
+@keyframes ping{0%{opacity:.45;transform:scale(.86)}100%{opacity:0;transform:scale(1.55)}}
 .f-svg .track{fill:none;stroke:var(--line);stroke-width:2}
 .f-svg .ringdraw{fill:none;stroke:var(--accent);stroke-width:2;stroke-linecap:round;
   transform:rotate(-90deg);transform-origin:center}
@@ -284,17 +292,20 @@ body{
     <div class="phone"><div class="screen f-screen" id="fScreen" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Confirming your booking">
       <div class="sb" style="width:100%"><span class="time tnum body-xs-emphasized">9:41</span><span class="sig"><i></i><i></i><i></i><i></i></span></div>
       <div class="f-seal">
-        <svg class="f-svg" width="118" height="118" viewBox="0 0 118 118" aria-hidden="true">
-          <circle class="track" cx="59" cy="59" r="52"/>
-          <circle class="ringdraw" id="fRing" cx="59" cy="59" r="52"/>
-          <path class="check" id="fCheck" d="M38 60 L53 75 L82 44"/>
-        </svg>
+        <div class="f-mark">
+          <svg class="f-svg" width="118" height="118" viewBox="0 0 118 118" aria-hidden="true">
+            <circle class="track" cx="59" cy="59" r="52"/>
+            <circle class="ringdraw" id="fRing" cx="59" cy="59" r="52"/>
+            <path class="check" id="fCheck" d="M38 60 L53 75 L82 44"/>
+          </svg>
+          <span class="f-ping" aria-hidden="true"></span>
+        </div>
         <div class="f-txt"><b id="fTitle" class="heading-2xs">Confirming your booking</b><span class="sub body-sm" id="fSub">Securing fare &amp; seat</span></div>
       </div>
       <div class="f-reveal">
         <div class="f-row body-sm"><span>Route</span><span>SEA → JFK</span></div>
         <div class="f-row body-sm"><span>Date</span><span>Aug 14, 2026</span></div>
-        <div class="f-row body-sm"><span>Confirmation</span><span class="tnum">HKZ8ZQ</span></div>
+        <div class="f-row body-sm"><span>Confirmation</span><span class="tnum" id="fCode">HKZ8ZQ</span></div>
       </div>
     </div></div>
   </section>
@@ -367,6 +378,22 @@ const F_RC=2*Math.PI*52, F_CL=fCheck.getTotalLength();
 fRing.style.strokeDasharray=F_RC; fCheck.style.strokeDasharray=F_CL;
 fCheck.style.strokeDashoffset=F_CL;   // check starts hidden; drawn on completion
 
+/* confirmation code "data-lock": chars settle left-to-right on completion */
+const fCode=document.getElementById('fCode');
+const F_CODE='HKZ8ZQ', F_CHARS='ABCDEFGHJKLMNPQRSTUVWXYZ0123456789';
+let fCodeTimer=null, fLocked=false;
+function lockCode(){
+  clearInterval(fCodeTimer);
+  if(RM){ fCode.textContent=F_CODE; return; }
+  const n=F_CODE.length, perChar=95, start=performance.now();
+  fCodeTimer=setInterval(()=>{
+    const locked=Math.floor((performance.now()-start)/perChar);
+    let s=''; for(let i=0;i<n;i++) s+= i<locked ? F_CODE[i] : F_CHARS[Math.floor(Math.random()*F_CHARS.length)];
+    fCode.textContent=s;
+    if(locked>=n){ clearInterval(fCodeTimer); fCode.textContent=F_CODE; }
+  },45);
+}
+
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function easeLoft(p){                 // quick eased draw over the first/last 20% of the arc, slow loft across the middle 60%
   const a=0.20, t=0.10;              // a: arc split (20%); t: time given to each fast end
@@ -403,6 +430,8 @@ function renderConfirm(p){
   document.getElementById('fScreen').classList.toggle('done',done);
   document.getElementById('fTitle').textContent=done?'Booking confirmed':'Confirming your booking';
   document.getElementById('fSub').textContent=done?'You’re all set':'Securing fare & seat';
+  if(done && !fLocked){ fLocked=true; setTimeout(lockCode,180); }        // lock the code once, on completion
+  else if(!done && fLocked){ fLocked=false; clearInterval(fCodeTimer); fCode.textContent=F_CODE; }
 }
 function renderSeat(p){
   const settled=Math.floor(p*SEAT_N+1e-9);
