@@ -213,12 +213,12 @@ body{
 .t-seat.settled{background:var(--accent-tint);border-color:var(--accent-tint);animation:seatpop .34s var(--ease) both}
 @keyframes seatpop{0%{transform:scale(.5)}62%{transform:scale(1.08)}100%{transform:scale(1)}}
 .t-seat.chosen{border-color:var(--accent-soft);border-style:dashed}
-.t-seat.chosen::after{content:"";position:absolute;inset:-2px;border-radius:9px;border:2px solid var(--accent);opacity:0;pointer-events:none}
+.t-seat.chosen::after{content:"";position:absolute;inset:-1px;border-radius:9px;border:1.5px solid var(--accent);opacity:0;pointer-events:none}
 .t-seat.locked{background:var(--accent);border-color:var(--accent);border-style:solid;
   box-shadow:0 6px 14px -6px color-mix(in srgb,var(--accent) 60%,transparent)}
-/* lock ceremony: a ring pings out from the chosen seat */
-.t-seat.locked::after{animation:seatping .6s var(--ease-out) both}
-@keyframes seatping{0%{opacity:.5;transform:scale(1)}100%{opacity:0;transform:scale(2.5)}}
+/* lock ceremony: a subtle ring pings out from the chosen seat */
+.t-seat.locked::after{animation:seatping .55s var(--ease-out) both}
+@keyframes seatping{0%{opacity:.3;transform:scale(1)}100%{opacity:0;transform:scale(1.8)}}
 .t-reveal{margin-top:26px;text-align:center;opacity:0;transform:translateY(6px);transition:.32s var(--ease-out)}
 .t-screen.done .t-reveal{opacity:1;transform:none}
 .t-reveal span{display:block;color:var(--ink-2);margin-top:3px;letter-spacing:.02em}  /* b → .body-default-emphasized; span → .body-xs */
