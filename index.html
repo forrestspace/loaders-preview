@@ -18,7 +18,10 @@ html,body{margin:0}
 body{font-family:var(--font);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
 
 .wrap{max-width:1080px;margin:0 auto;padding:56px 24px 80px}
-header .ey{font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3)}
+header .ey{display:flex;gap:6px}  /* quiet dual-brand marker in place of a label */
+header .ey span{width:8px;height:8px;border-radius:50%}
+header .ey span:first-child{background:var(--alaska)}
+header .ey span:last-child{background:var(--hawaiian)}
 header h1{font-size:clamp(28px,4vw,40px);font-weight:700;letter-spacing:-.02em;margin:10px 0 12px}
 header p{font-size:16px;color:var(--ink-2);max-width:620px;line-height:1.55;margin:0}
 
@@ -59,7 +62,7 @@ footer code{background:#eceef1;padding:1px 6px;border-radius:5px;font-size:12px}
 <body>
 <div class="wrap">
   <header>
-    <div class="ey">Prototypes</div>
+    <div class="ey" aria-hidden="true"><span></span><span></span></div>
     <h1>Alaska / Hawaiian loaders</h1>
     <p>A set of progress-driven and brand-moment loading experiences, each brandable for both Alaska and Hawaiian. Open any prototype to interact with it — most include a brand toggle and demo controls.</p>
   </header>
