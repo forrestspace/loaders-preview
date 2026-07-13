@@ -133,7 +133,7 @@ body{
    ============================================================ */
 .s-head{margin-top:30px}
 .s-route{
-  display:flex;align-items:baseline;gap:14px;margin-top:14px;
+  display:flex;align-items:baseline;gap:14px;margin-top:0;
   font-family:var(--font-display);font-weight:600;letter-spacing:-.02em;
 }
 .s-route .code{font-size:34px;line-height:1}
@@ -154,7 +154,7 @@ body{
    2 · CHECK-IN — sequential steps
    ============================================================ */
 .c-head{margin-top:30px}
-.c-list{margin-top:24px;display:flex;flex-direction:column;position:relative}
+.c-list{margin-top:17px;display:flex;flex-direction:column;position:relative}
 .c-spine{position:absolute;left:11px;top:25px;bottom:25px;width:2px;background:var(--line-2);border-radius:2px;overflow:hidden}
 .c-spine i{position:absolute;inset:0 0 auto 0;height:0;background:var(--accent);border-radius:2px;transition:height .45s var(--ease)}
 .c-step{display:flex;align-items:center;gap:14px;padding:13px 0;position:relative;z-index:1}
@@ -262,7 +262,6 @@ body{
     <div class="phone"><div class="screen" id="sScreen" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Searching flights SEA to JFK">
       <div class="sb"><span class="time tnum body-xs-emphasized">9:41</span><span class="sig"><i></i><i></i><i></i><i></i></span></div>
       <div class="s-head">
-        <div class="ey body-xs-emphasized">Searching fares</div>
         <div class="s-route"><span class="code">SEA</span><span class="arrow"></span><span class="code">JFK</span></div>
       </div>
       <svg class="s-svg" id="sSvg" viewBox="0 0 264 110" aria-hidden="true">
@@ -288,7 +287,6 @@ body{
     </div>
     <div class="phone"><div class="screen t-screen" id="tScreen" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Saving your seat 14C">
       <div class="sb"><span class="time tnum body-xs-emphasized">9:41</span><span class="sig"><i></i><i></i><i></i><i></i></span></div>
-      <div class="t-head"><div class="ey body-xs-emphasized">Saving your seat</div></div>
       <div class="t-grid-wrap"><div class="t-grid" id="tGrid"></div></div>
       <div class="t-reveal"><b class="tnum body-default-emphasized" id="tSeatLabel">Seat 14C</b><span class="body-xs" id="tSeatSub">SEA → JFK · Main Cabin</span></div>
       <div class="foot-pct" style="margin-top:auto">
@@ -334,7 +332,6 @@ body{
     </div>
     <div class="phone"><div class="screen" id="cScreen" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Checking you in">
       <div class="sb"><span class="time tnum body-xs-emphasized">9:41</span><span class="sig"><i></i><i></i><i></i><i></i></span></div>
-      <div class="c-head"><div class="ey body-xs-emphasized">Checking you in</div></div>
       <div class="c-list" id="cList"></div>
       <div class="foot-pct">
         <span class="note body-xs">SEA → JFK · Flight 24</span>
