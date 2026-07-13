@@ -208,14 +208,14 @@ body{
 .t-head{margin-top:30px}
 .t-grid-wrap{margin:30px auto 0;display:flex;justify-content:center}
 .t-grid{display:grid;grid-template-columns:repeat(3,1fr) 14px repeat(3,1fr);gap:9px}
-.t-seat{width:26px;height:26px;border-radius:7px;background:var(--surface);border:1.5px solid var(--line-2);position:relative;
+.t-seat{width:var(--seat,26px);height:var(--seat,26px);border-radius:var(--seat-r,7px);background:var(--surface);border:1.5px solid var(--line-2);position:relative;
   transition:background .22s var(--ease),border-color .22s var(--ease),transform .22s var(--ease)}
 .t-aisle{width:14px}
 /* each cell springs in as the cabin sweep reaches it */
 .t-seat.settled{background:var(--accent-tint);border-color:var(--accent-tint);animation:seatpop .34s var(--ease) both}
 @keyframes seatpop{0%{transform:scale(.5)}62%{transform:scale(1.08)}100%{transform:scale(1)}}
 .t-seat.chosen{border-color:var(--accent-soft);border-style:dashed}
-.t-seat.chosen::after{content:"";position:absolute;inset:-1px;border-radius:9px;border:1.5px solid var(--accent);opacity:0;pointer-events:none}
+.t-seat.chosen::after{content:"";position:absolute;inset:-1px;border-radius:calc(var(--seat-r,7px) + 1px);border:1.5px solid var(--accent);opacity:0;pointer-events:none}
 .t-seat.locked{background:var(--accent);border-color:var(--accent);border-style:solid;
   box-shadow:0 6px 14px -6px color-mix(in srgb,var(--accent) 60%,transparent)}
 /* lock ceremony: a subtle ring pings out from the chosen seat */
@@ -237,6 +237,10 @@ body{
     <div class="seg" role="group" aria-label="Brand">
       <button id="bAla" aria-pressed="true">Alaska</button>
       <button id="bHaw" aria-pressed="false">Hawaiian</button>
+    </div>
+    <div class="seg" role="group" aria-label="Cabin">
+      <button id="cMain" aria-pressed="true">Main</button>
+      <button id="cFirst" aria-pressed="false">First</button>
     </div>
     <div class="scrub">
       <label for="master">Scrub all</label>
@@ -286,7 +290,7 @@ body{
       <div class="sb"><span class="time tnum body-xs-emphasized">9:41</span><span class="sig"><i></i><i></i><i></i><i></i></span></div>
       <div class="t-head"><div class="ey body-xs-emphasized">Saving your seat</div></div>
       <div class="t-grid-wrap"><div class="t-grid" id="tGrid"></div></div>
-      <div class="t-reveal"><b class="tnum body-default-emphasized">Seat 14C</b><span class="body-xs">SEA → JFK · Main Cabin</span></div>
+      <div class="t-reveal"><b class="tnum body-default-emphasized" id="tSeatLabel">Seat 14C</b><span class="body-xs" id="tSeatSub">SEA → JFK · Main Cabin</span></div>
       <div class="foot-pct" style="margin-top:auto">
         <span class="note body-xs" id="tNote">Holding seat map</span>
       </div>
@@ -368,20 +372,37 @@ const cSteps=[...document.querySelectorAll('.c-step')];
 const C_CIRC=2*Math.PI*10;
 cSteps.forEach(st=>{const a=st.querySelector('.arc');a.style.strokeDasharray=C_CIRC;});
 
-const SEAT_ROWS=5, SEAT_COLS=6, SEAT_N=SEAT_ROWS*SEAT_COLS;
-const CHOSEN=2*SEAT_COLS+2; // row index 2 (14), col index 2 (C)
-const tGrid=document.getElementById('tGrid'); const seats=[];
-for(let i=0;i<SEAT_N;i++){
-  const c=i%SEAT_COLS;
-  const s=document.createElement('div'); s.className='t-seat'+(i===CHOSEN?' chosen':'');
-  if(c===3){const a=document.createElement('div');a.className='t-aisle';tGrid.appendChild(a);}
-  tGrid.appendChild(s); seats.push(s);
+const tGrid=document.getElementById('tGrid');
+// two cabin forms — same colour, different scale & count
+const CABIN={
+  main:  {rows:5,cols:6,aisle:3,aisleW:14,seat:26,radius:7, gap:9,  chosen:14,label:'14C',klass:'Main Cabin'},
+  first: {rows:4,cols:4,aisle:2,aisleW:26,seat:42,radius:12,gap:12, chosen:4, label:'2A', klass:'First Class'}
+};
+let SEAT_ROWS,SEAT_COLS,SEAT_N,CHOSEN,seats,orderPos;
+function buildSeats(cabin){
+  const cfg=CABIN[cabin];
+  SEAT_ROWS=cfg.rows; SEAT_COLS=cfg.cols; SEAT_N=SEAT_ROWS*SEAT_COLS; CHOSEN=cfg.chosen;
+  tGrid.innerHTML='';
+  tGrid.style.gridTemplateColumns=`repeat(${cfg.aisle},1fr) ${cfg.aisleW}px repeat(${SEAT_COLS-cfg.aisle},1fr)`;
+  tGrid.style.gap=cfg.gap+'px';
+  tGrid.style.setProperty('--seat',cfg.seat+'px');
+  tGrid.style.setProperty('--seat-r',cfg.radius+'px');
+  seats=[];
+  for(let i=0;i<SEAT_N;i++){
+    const c=i%SEAT_COLS;
+    if(c===cfg.aisle){const a=document.createElement('div');a.className='t-aisle';tGrid.appendChild(a);}
+    const s=document.createElement('div'); s.className='t-seat'+(i===CHOSEN?' chosen':'');
+    tGrid.appendChild(s); seats.push(s);
+  }
+  // settle order: front → back with a slight diagonal lean (a cabin sweep, not raster)
+  orderPos=new Array(SEAT_N);
+  [...Array(SEAT_N).keys()]
+    .sort((a,b)=>((a/SEAT_COLS|0)+ (a%SEAT_COLS)*0.14) - ((b/SEAT_COLS|0)+ (b%SEAT_COLS)*0.14))
+    .forEach((seatIdx,k)=>orderPos[seatIdx]=k);
+  document.getElementById('tSeatLabel').textContent='Seat '+cfg.label;
+  document.getElementById('tSeatSub').textContent='SEA → JFK · '+cfg.klass;
 }
-// settle order: front → back with a slight diagonal lean (a cabin sweep, not raster)
-const orderPos=new Array(SEAT_N);
-[...Array(SEAT_N).keys()]
-  .sort((a,b)=>((a/SEAT_COLS|0)+ (a%SEAT_COLS)*0.14) - ((b/SEAT_COLS|0)+ (b%SEAT_COLS)*0.14))
-  .forEach((seatIdx,k)=>orderPos[seatIdx]=k);
+buildSeats('main');
 
 /* ---------- progress-bound geometry ---------- */
 const sDraw=document.getElementById('sDraw'), sTrack=document.getElementById('sTrack');
@@ -523,6 +544,15 @@ function setBrand(b){
 document.getElementById('bAla').addEventListener('click',()=>setBrand('alaska'));
 document.getElementById('bHaw').addEventListener('click',()=>setBrand('hawaiian'));
 setBrand('alaska');
+
+function setCabin(cabin){
+  buildSeats(cabin);
+  document.getElementById('cMain').setAttribute('aria-pressed',cabin==='main');
+  document.getElementById('cFirst').setAttribute('aria-pressed',cabin==='first');
+  renderSeat(cards[3].p);   // re-render the seat card at its current progress
+}
+document.getElementById('cMain').addEventListener('click',()=>setCabin('main'));
+document.getElementById('cFirst').addEventListener('click',()=>setCabin('first'));
 
 /* ---------- reduced motion: static end-state, no loop ---------- */
 if(RM){
