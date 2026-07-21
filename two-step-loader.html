@@ -191,16 +191,35 @@ function setBrand(b){
 bAla.onclick=()=>setBrand('alaska');
 bHaw.onclick=()=>setBrand('hawaiian');
 
-sLoad.onclick=()=>Loader.reset();
-sDone.onclick=()=>Loader.complete();
+sLoad.onclick=()=>{ stopDemo(); Loader.reset(); };
+sDone.onclick=()=>{ stopDemo(); Loader.complete(); };
 
-/* run demo: loading (with changing text) -> complete */
-document.getElementById('run').onclick=()=>{
+/* run demo: loops loading (with changing text) -> complete -> hold -> repeat */
+const runBtn=document.getElementById('run');
+const DEMO_SEQ=['Ticketing trip','Confirming your seats','Issuing your ticket'];
+let demoStep=null, demoHold=null, demoOn=false;
+
+function stopDemo(){
+  clearInterval(demoStep); clearTimeout(demoHold);
+  demoStep=demoHold=null; demoOn=false;
+  runBtn.textContent='▶ Run demo'; runBtn.setAttribute('aria-pressed','false');
+}
+function runCycle(){
   Loader.reset();
-  const seq=['Ticketing trip','Confirming your seats','Issuing your ticket'];
-  let i=0; Loader.setStatus(seq[0]);
-  const t=setInterval(()=>{ i++; if(i<seq.length) Loader.setStatus(seq[i]);
-    else { clearInterval(t); Loader.complete({title:'Booking complete'}); } },1500);
+  let i=0; Loader.setStatus(DEMO_SEQ[0]);
+  demoStep=setInterval(()=>{
+    i++;
+    if(i<DEMO_SEQ.length){ Loader.setStatus(DEMO_SEQ[i]); return; }
+    clearInterval(demoStep); demoStep=null;
+    Loader.complete({title:'Booking complete'});
+    if(demoOn) demoHold=setTimeout(runCycle,1900);   // hold on the finished state, then loop
+  },1500);
+}
+runBtn.onclick=()=>{
+  if(demoOn){ stopDemo(); return; }
+  demoOn=true;
+  runBtn.textContent='⏸ Stop'; runBtn.setAttribute('aria-pressed','true');
+  runCycle();
 };
 
 setBrand('alaska');
