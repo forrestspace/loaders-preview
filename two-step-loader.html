@@ -145,8 +145,8 @@ input[type=text]{width:210px}
           <circle class="track" cx="25" cy="25" r="20"/>
           <circle class="head"  cx="25" cy="25" r="20"/>
         </svg>
-        <p class="title heading-lg"><span id="ldText">Finding your trips</span><span class="dots" aria-hidden="true"><i>.</i><i>.</i><i>.</i></span></p>
-        <p class="sub heading-sm" id="ldSub">This may take a minute or two. Please stay on the page.</p>
+        <p class="title heading-lg"><span id="ldText">Finding your trip</span><span class="dots" aria-hidden="true"><i>.</i><i>.</i><i>.</i></span></p>
+        <p class="sub heading-sm" id="ldSub">Searching reservations for your confirmation code</p>
       </div>
       <!-- STEP 2 · COMPLETE -->
       <div class="view done">
@@ -154,7 +154,8 @@ input[type=text]{width:210px}
           <circle class="ring" cx="30" cy="30" r="26"/>
           <g class="glyph" id="glyph"><path d="M19 30.5 l7 7 l14 -15.5"/></g>
         </svg>
-        <p class="title heading-lg" id="doneTitle">Trips found</p>
+        <p class="title heading-lg" id="doneTitle">Trip found</p>
+        <p class="sub heading-sm" id="doneSub">Opening your trip details</p>
       </div>
     </div>
   </div>
@@ -165,6 +166,7 @@ const loader   = document.getElementById('loader');
 const ldText   = document.getElementById('ldText');
 const ldSub    = document.getElementById('ldSub');
 const doneTitle= document.getElementById('doneTitle');
+const doneSub  = document.getElementById('doneSub');
 
 /* ---- component API ---- */
 const Loader = {
@@ -174,6 +176,7 @@ const Loader = {
   },
   complete(opts={}){                    // go to step 2
     if(opts.title) doneTitle.textContent = opts.title;
+    if(opts.sub!=null) doneSub.textContent = opts.sub;
     loader.dataset.state = 'complete';
     setPressed(sLoad,false); setPressed(sDone,true);
   },
@@ -196,42 +199,38 @@ bAla.onclick=()=>setBrand('alaska');
 bHaw.onclick=()=>setBrand('hawaiian');
 
 sLoad.onclick=()=>{ stopDemo(); applyType(); Loader.reset(); };
-sDone.onclick=()=>{ stopDemo(); Loader.complete({title:TYPES[TYPE].done}); };
+sDone.onclick=()=>{ stopDemo(); Loader.complete(TYPES[TYPE].done); };
 
 /* run demo: loops loading (with changing text) -> complete -> hold -> repeat */
 const runBtn=document.getElementById('run');
 /* two loader types — same structure, different copy */
 const TYPES={
   trips:{
-    seq:['Finding your trips','Checking fares','Comparing options'],
-    sub:'This may take a minute or two. Please stay on the page.',
-    done:'Trips found'
+    load:{title:'Finding your trip', sub:'Searching reservations for your confirmation code'},
+    done:{title:'Trip found',        sub:'Opening your trip details'}
   },
   seats:{
-    seq:['Finding your seats','Checking availability','Preparing seat map'],
-    sub:'This may take a minute or two. Please stay on the page.',
-    done:'Seats found'
+    load:{title:'Getting your seatmap', sub:'Checking which seats are still available'},
+    done:{title:'Seatmap ready',        sub:'Choose your seat on the next screen'}
   }
 };
 let TYPE='trips';
 let demoStep=null, demoHold=null, demoOn=false;
 
 function stopDemo(){
-  clearInterval(demoStep); clearTimeout(demoHold);
+  clearTimeout(demoStep); clearTimeout(demoHold);
   demoStep=demoHold=null; demoOn=false;
   runBtn.textContent='▶ Run demo'; runBtn.setAttribute('aria-pressed','false');
 }
 function runCycle(){
   const t=TYPES[TYPE];
   Loader.reset();
-  let i=0; Loader.setStatus(t.seq[0],t.sub);
-  demoStep=setInterval(()=>{
-    i++;
-    if(i<t.seq.length){ Loader.setStatus(t.seq[i]); return; }
-    clearInterval(demoStep); demoStep=null;
-    Loader.complete({title:t.done});
-    if(demoOn) demoHold=setTimeout(runCycle,1900);   // hold on the finished state, then loop
-  },1500);
+  Loader.setStatus(t.load.title,t.load.sub);
+  demoStep=setTimeout(()=>{                          // hold on loading, then resolve
+    demoStep=null;
+    Loader.complete(t.done);
+    if(demoOn) demoHold=setTimeout(runCycle,2200);   // hold on the finished state, then loop
+  },3000);
 }
 runBtn.onclick=()=>{
   if(demoOn){ stopDemo(); return; }
@@ -243,8 +242,9 @@ runBtn.onclick=()=>{
 /* type: swaps the copy set (loading title, subline, completion title) */
 function applyType(){
   const t=TYPES[TYPE];
-  Loader.setStatus(t.seq[0],t.sub);
-  document.getElementById('doneTitle').textContent=t.done;
+  Loader.setStatus(t.load.title,t.load.sub);
+  doneTitle.textContent=t.done.title;
+  doneSub.textContent=t.done.sub;
 }
 function setType(type){
   TYPE=type;
