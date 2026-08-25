@@ -124,6 +124,10 @@ input[type=text]{width:210px}
       <button id="bAla" aria-pressed="true">Alaska</button>
       <button id="bHaw" aria-pressed="false">Hawaiian</button>
     </div>
+    <div class="seg" role="group" aria-label="Type">
+      <button id="tTrips" aria-pressed="true">Trips</button>
+      <button id="tSeats" aria-pressed="false">Seats</button>
+    </div>
     <div class="seg" role="group" aria-label="Step">
       <button id="sLoad" aria-pressed="true">Loading</button>
       <button id="sDone" aria-pressed="false">Complete</button>
@@ -141,7 +145,7 @@ input[type=text]{width:210px}
           <circle class="track" cx="25" cy="25" r="20"/>
           <circle class="head"  cx="25" cy="25" r="20"/>
         </svg>
-        <p class="title heading-lg"><span id="ldText">Ticketing trip</span><span class="dots" aria-hidden="true"><i>.</i><i>.</i><i>.</i></span></p>
+        <p class="title heading-lg"><span id="ldText">Finding your trips</span><span class="dots" aria-hidden="true"><i>.</i><i>.</i><i>.</i></span></p>
         <p class="sub heading-sm" id="ldSub">This may take a minute or two. Please stay on the page.</p>
       </div>
       <!-- STEP 2 · COMPLETE -->
@@ -150,7 +154,7 @@ input[type=text]{width:210px}
           <circle class="ring" cx="30" cy="30" r="26"/>
           <g class="glyph" id="glyph"><path d="M19 30.5 l7 7 l14 -15.5"/></g>
         </svg>
-        <p class="title heading-lg" id="doneTitle">Booking complete</p>
+        <p class="title heading-lg" id="doneTitle">Trips found</p>
       </div>
     </div>
   </div>
@@ -191,12 +195,25 @@ function setBrand(b){
 bAla.onclick=()=>setBrand('alaska');
 bHaw.onclick=()=>setBrand('hawaiian');
 
-sLoad.onclick=()=>{ stopDemo(); Loader.reset(); };
-sDone.onclick=()=>{ stopDemo(); Loader.complete(); };
+sLoad.onclick=()=>{ stopDemo(); applyType(); Loader.reset(); };
+sDone.onclick=()=>{ stopDemo(); Loader.complete({title:TYPES[TYPE].done}); };
 
 /* run demo: loops loading (with changing text) -> complete -> hold -> repeat */
 const runBtn=document.getElementById('run');
-const DEMO_SEQ=['Ticketing trip','Confirming your seats','Issuing your ticket'];
+/* two loader types — same structure, different copy */
+const TYPES={
+  trips:{
+    seq:['Finding your trips','Checking fares','Comparing options'],
+    sub:'This may take a minute or two. Please stay on the page.',
+    done:'Trips found'
+  },
+  seats:{
+    seq:['Finding your seats','Checking availability','Preparing seat map'],
+    sub:'This may take a minute or two. Please stay on the page.',
+    done:'Seats found'
+  }
+};
+let TYPE='trips';
 let demoStep=null, demoHold=null, demoOn=false;
 
 function stopDemo(){
@@ -205,13 +222,14 @@ function stopDemo(){
   runBtn.textContent='▶ Run demo'; runBtn.setAttribute('aria-pressed','false');
 }
 function runCycle(){
+  const t=TYPES[TYPE];
   Loader.reset();
-  let i=0; Loader.setStatus(DEMO_SEQ[0]);
+  let i=0; Loader.setStatus(t.seq[0],t.sub);
   demoStep=setInterval(()=>{
     i++;
-    if(i<DEMO_SEQ.length){ Loader.setStatus(DEMO_SEQ[i]); return; }
+    if(i<t.seq.length){ Loader.setStatus(t.seq[i]); return; }
     clearInterval(demoStep); demoStep=null;
-    Loader.complete({title:'Booking complete'});
+    Loader.complete({title:t.done});
     if(demoOn) demoHold=setTimeout(runCycle,1900);   // hold on the finished state, then loop
   },1500);
 }
@@ -222,7 +240,26 @@ runBtn.onclick=()=>{
   runCycle();
 };
 
+/* type: swaps the copy set (loading title, subline, completion title) */
+function applyType(){
+  const t=TYPES[TYPE];
+  Loader.setStatus(t.seq[0],t.sub);
+  document.getElementById('doneTitle').textContent=t.done;
+}
+function setType(type){
+  TYPE=type;
+  document.getElementById('tTrips').setAttribute('aria-pressed',type==='trips');
+  document.getElementById('tSeats').setAttribute('aria-pressed',type==='seats');
+  const wasRunning=demoOn;
+  stopDemo();
+  applyType();
+  if(wasRunning) runBtn.click();          // keep the demo looping across a type change
+}
+document.getElementById('tTrips').addEventListener('click',()=>setType('trips'));
+document.getElementById('tSeats').addEventListener('click',()=>setType('seats'));
+
 setBrand('alaska');
+setType('trips');
 </script>
 </body>
 </html>
